@@ -4,7 +4,7 @@ import api from './api'
 export async function registerPasskey(username: string, displayName: string, email: string) {
   const { data: options } = await api.post('/register/options', { username, displayName, email })
 
-  const result = await Passkey.register({
+  const result = await Passkey.create({
     challenge: options.challenge,
     rp: options.rp,
     user: options.user,
@@ -32,7 +32,7 @@ export async function registerPasskey(username: string, displayName: string, ema
 export async function loginPasskey(username?: string) {
   const { data: options } = await api.post('/login/options', { username: username ?? '' })
 
-  const result = await Passkey.authenticate({
+  const result = await Passkey.get({
     challenge: options.challenge,
     rpId: options.rpId,
     allowCredentials: options.allowCredentials ?? [],
