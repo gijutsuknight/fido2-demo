@@ -1,0 +1,25 @@
+# ── Maven build output ───────────────────────────────────────────
+target/
+!.mvn/wrapper/maven-wrapper.jar
+
+# ── Maven wrapper properties (keep the jar, ignore the .cmd on non-Windows)
+.mvn/wrapper/maven-wrapper.properties
+
+# ── Spring Boot / runtime ─────────────────────────────────────────
+*.jar
+!.mvn/**/*.jar
+spring-shell.log
+application-local.yml
+application-local.properties
+
+# ── IDE ───────────────────────────────────────────────────────────
+.idea/
+*.iml
+.classpath
+.project
+.settings/
+bin/
+out/
+
+# ── OS ────────────────────────────────────────────────────────────
+.DS_Store

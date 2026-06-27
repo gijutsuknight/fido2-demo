@@ -1,0 +1,75 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: fido2-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: fido2demo
+      MYSQL_USER: fido2user
+      MYSQL_PASSWORD: fido2pass
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "fido2user", "-pfido2pass"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - fido2net
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: fido2-backend
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: fido2demo
+      DB_USER: fido2user
+      DB_PASSWORD: fido2pass
+      JWT_SECRET: fido2-demo-secret-key-change-in-production-at-least-256-bits-long
+      RP_ID: localhost
+      RP_NAME: "FIDO2 Demo"
+      RP_ORIGINS: "http://localhost,http://localhost:5173,http://localhost:3000"
+    ports:
+      - "8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - fido2net
+
+  web:
+    build:
+      context: ./fido2-demo-web
+      dockerfile: Dockerfile
+    container_name: fido2-web
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - fido2net
+
+  nginx:
+    image: nginx:alpine
+    container_name: fido2-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - backend
+      - web
+    networks:
+      - fido2net
+
+volumes:
+  mysql_data:
+
+networks:
+  fido2net:
+    driver: bridge

@@ -1,0 +1,50 @@
+# ── Dependencies ──────────────────────────────────────────────────
+node_modules/
+
+# ── Expo ──────────────────────────────────────────────────────────
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# ── Generated native build folders (created by `expo run:ios` etc.) ──
+/ios/
+/android/
+.kotlin/
+
+# ── Native credentials / signing ──────────────────────────────────
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.pem
+google-services.json
+GoogleService-Info.plist
+
+# ── Metro bundler ─────────────────────────────────────────────────
+.metro-health-check*
+
+# ── Logs ──────────────────────────────────────────────────────────
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+bun-debug.*
+*.log
+
+# ── Environment / secrets ─────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+
+# ── TypeScript ────────────────────────────────────────────────────
+*.tsbuildinfo
+
+# ── OS ────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.orig.*
+
+# ── Editor ────────────────────────────────────────────────────────
+.idea/
+.vscode/
