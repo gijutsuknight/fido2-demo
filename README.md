@@ -19,8 +19,10 @@ inspect the raw WebAuthn JSON messages, and manage credentials across web and mo
 3. [Project Structure](#project-structure)
 4. [Environment Setup](#environment-setup)
 5. [Running the System](#running-the-system)
-6. [API Reference](#api-reference)
-7. [Tech Stack](#tech-stack)
+6. [Mobile App Configuration](#mobile-app-configuration)
+7. [Verifying the backend is running](#verifying-the-backend-is-running)
+8. [API Reference](#api-reference)
+9. [Tech Stack](#tech-stack)
 
 ---
 
@@ -324,7 +326,8 @@ fido2/
 │       ├── controller/
 │       │   ├── RegistrationController.java
 │       │   ├── AuthenticationController.java
-│       │   └── UserController.java
+│       │   ├── UserController.java
+│       │   └── WellKnownController.java  ← Digital Asset Links for mobile passkeys
 │       ├── service/
 │       │   ├── RegistrationService.java  ← registration ceremony
 │       │   ├── AuthenticationService.java← authentication ceremony
@@ -371,9 +374,10 @@ fido2/
 │       │       ├── credentials.tsx
 │       │       └── profile.tsx
 │       └── lib/
-│           ├── api.ts              ← axios + JWT interceptor
-│           ├── store.ts            ← Zustand (AsyncStorage persist)
-│           └── passkey.ts          ← react-native-passkey wrappers
+│           ├── config.ts             ← API host, port, WebAuthn rpId
+│           ├── api.ts                ← axios + JWT interceptor + request/response logging
+│           ├── store.ts              ← Zustand (AsyncStorage persist)
+│           └── passkey.ts            ← react-native-passkey wrappers (Passkey.create / Passkey.get)
 │
 └── nginx/
     └── nginx.conf                  ← reverse proxy config
@@ -452,6 +456,8 @@ docker compose up --build
 #   localhost:3306         → MySQL
 ```
 
+The backend container defaults to `RP_ID=192.168.1.11` for mobile passkey testing on your LAN. Override in `docker-compose.yml` or set `RP_ID=localhost` if you only need the web app during local development.
+
 Stop:
 ```bash
 docker compose down          # keep data
@@ -489,10 +495,14 @@ DB_NAME=fido2demo
 DB_USER=fido2user
 DB_PASSWORD=fido2pass
 JWT_SECRET=fido2-demo-secret-key-change-in-production-at-least-256-bits
-RP_ID=localhost
+RP_ID=192.168.1.11
 RP_NAME="FIDO2 Demo"
-RP_ORIGINS=http://localhost:5173,http://localhost:3000
+RP_ORIGINS=http://192.168.1.11:8080,http://192.168.1.11,http://localhost:5173,http://localhost:3000,http://localhost
+ANDROID_PACKAGE=com.fido2demo.mobile
+ANDROID_CERT_FINGERPRINTS=FA:C6:17:45:DC:09:03:78:6F:B9:ED:E6:2A:96:2B:39:9F:73:48:F0:BB:6F:89:9B:83:32:66:75:91:03:3B:9C
 ```
+
+> **RP ID note:** Passkeys are scoped to the RP ID. The default (`192.168.1.11`) is set up for mobile testing on a local network. For **web-only** development in the browser, override with `RP_ID=localhost` when starting the backend. Web and mobile credentials are not interchangeable unless they share the same RP ID.
 
 **Step 3 — Start the web frontend**
 ```bash
@@ -511,33 +521,106 @@ cd fido2-demo-mobile
 bun ios
 ```
 
-For Android emulator:
+For Android emulator or a physical device:
 ```bash
 bun android
 ```
 
 > **Note:** `react-native-passkey` requires a **native development build** — it does not work in Expo Go.
 > The first `bun ios` / `bun android` will build the native shell (takes a few minutes).
-> Set `EXPO_PUBLIC_API_URL=http://YOUR_MACHINE_IP:8080` so the device can reach your local backend.
 
-```bash
-# Example for local network
-EXPO_PUBLIC_API_URL=http://192.168.1.10:8080 bun ios
-```
-
-### Running on a real iOS device (passkeys require real hardware)
-
-Passkeys require a **real device** or a simulator running iOS 16+. You also need:
-1. Your server accessible over HTTPS (use `ngrok` or a real domain for testing)
-2. An **Associated Domains** entry in your Xcode project: `webcredentials:your-domain.com`
-3. A `/.well-known/apple-app-site-association` file served by your backend:
-   ```json
-   { "webcredentials": { "apps": ["TEAMID.com.example.fido2demo"] } }
-   ```
-
-For local dev, the web app works with `localhost` since browsers allow passkeys on localhost.
+See [Mobile App Configuration](#mobile-app-configuration) for API host, RP ID, and passkey setup on real devices.
 
 ---
+
+## Mobile App Configuration
+
+### Central config file
+
+Edit `fido2-demo-mobile/src/config.ts` to point at your backend and WebAuthn RP ID:
+
+```typescript
+const API_HOST = '192.168.1.11'   // your machine's LAN IP
+const API_PORT = 8080
+
+export const config = {
+  api: {
+    host: API_HOST,
+    port: API_PORT,
+    baseUrl: process.env.EXPO_PUBLIC_API_URL ?? `http://${API_HOST}:${API_PORT}`,
+  },
+  webauthn: {
+    rpId: process.env.EXPO_PUBLIC_RP_ID ?? API_HOST,
+  },
+}
+```
+
+The mobile app reads API URL and RP ID from here. Override at runtime with:
+
+```bash
+EXPO_PUBLIC_API_URL=http://192.168.1.11:8080 EXPO_PUBLIC_RP_ID=192.168.1.11 bun android
+```
+
+Keep `config.webauthn.rpId` in sync with the backend `RP_ID`. After changing either value, restart the backend and rebuild the mobile app.
+
+### Passkeys on a real device
+
+Passkeys require a **physical device** (or iOS 16+ simulator). Native passkeys do **not** work with `rpId: localhost` on a phone — `localhost` refers to the device itself, not your dev machine.
+
+**Checklist for Android:**
+
+1. Set your machine's LAN IP in `src/config.ts` and backend `RP_ID`
+2. Restart the backend so `/api/login/options` returns the correct `rpId`
+3. Verify Digital Asset Links are served:
+   ```bash
+   curl http://192.168.1.11:8080/.well-known/assetlinks.json
+   ```
+4. Rebuild the native app: `npx expo run:android`
+5. **Register a passkey on the device** — credentials created in the web browser are stored separately and cannot be used by the native app
+6. Sign in with the passkey prompt (leave username blank for discoverable login, or use a user registered on this device)
+
+**Checklist for iOS:**
+
+1. Match `RP_ID` and `config.webauthn.rpId` to your server host
+2. Set Associated Domains in `app.json`: `webcredentials:<your-host>`
+3. Serve `/.well-known/apple-app-site-association` from your backend (HTTPS recommended; use ngrok or a real domain for production-like testing)
+4. Rebuild: `npx expo run:ios`
+
+**Android build settings** (in `app.json` via `expo-build-properties`):
+
+- `compileSdkVersion: 36` — required by recent AndroidX dependencies
+- `minSdkVersion: 28` — minimum for `react-native-passkey`
+- `usesCleartextTraffic: true` — allows HTTP to a local backend during development
+
+### react-native-passkey API
+
+The library uses WebAuthn-style method names:
+
+| Purpose | Method |
+|---------|--------|
+| Register | `Passkey.create(...)` |
+| Sign in | `Passkey.get(...)` |
+
+### API request logging
+
+The mobile axios client logs every request and response to the Metro console:
+
+```
+[REQUEST]  {full URL} {headers} {body}
+[RESPONSE] {full URL} {headers} {body}
+```
+
+### Troubleshooting mobile passkeys
+
+| Symptom | Likely cause | Fix |
+|---------|--------------|-----|
+| `Passkey.get()` hangs, no UI | `rpId` is `localhost` on a physical device | Set `RP_ID` and `config.webauthn.rpId` to your LAN IP; restart backend |
+| No error shown on failure | Passkey errors are plain objects, not `Error` | Check Metro logs; the app surfaces `message` from passkey errors in alerts |
+| Login finds no passkey | Credential was registered on web, not on phone | Register again from the mobile app |
+| Build fails on AndroidX metadata | `compileSdk` too low | Ensure `compileSdkVersion: 36` in `app.json` |
+| App cannot reach backend | Wrong IP or firewall | Confirm `curl http://<IP>:8080/api/health` from the device network |
+
+For local web development, browsers treat `localhost` as a secure context and passkeys work without Digital Asset Links. That does **not** apply to the native mobile app.
 
 ## Verifying the backend is running
 
@@ -549,7 +632,13 @@ curl -X POST http://localhost:8080/api/register/options \
   -H "Content-Type: application/json" \
   -d '{"username":"alice","displayName":"Alice","email":"alice@example.com"}'
 # → {"challenge":"...","rp":{...},"user":{...},...}
+
+# Mobile passkey setup — Digital Asset Links (Android)
+curl http://192.168.1.11:8080/.well-known/assetlinks.json
+# → [{"relation":["delegate_permission/common.handle_all_urls",...],"target":{...}}]
 ```
+
+Replace `192.168.1.11` with your machine IP if different.
 
 ---
 
@@ -586,6 +675,14 @@ GET  /api/login-history?page=0&size=20
 ```
 GET  /api/health                    public → "OK"
 ```
+
+### Well-known (mobile passkey association)
+
+```
+GET  /.well-known/assetlinks.json   public → Android Digital Asset Links
+```
+
+Configure via `ANDROID_PACKAGE` and `ANDROID_CERT_FINGERPRINTS` in the backend environment. The default fingerprint matches the Expo/Android debug keystore.
 
 ---
 
