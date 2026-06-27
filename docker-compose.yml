@@ -31,9 +31,9 @@ services:
       DB_USER: fido2user
       DB_PASSWORD: fido2pass
       JWT_SECRET: fido2-demo-secret-key-change-in-production-at-least-256-bits-long
-      RP_ID: localhost
+      RP_ID: 192.168.1.11
       RP_NAME: "FIDO2 Demo"
-      RP_ORIGINS: "http://localhost,http://localhost:5173,http://localhost:3000"
+      RP_ORIGINS: "http://192.168.1.11:8080,http://192.168.1.11,http://localhost,http://localhost:5173,http://localhost:3000"
     ports:
       - "8080:8080"
     depends_on:

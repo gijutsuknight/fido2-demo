@@ -9,10 +9,14 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/expo.icon",
-      "bundleIdentifier": "com.fido2demo.mobile"
+      "bundleIdentifier": "com.fido2demo.mobile",
+      "associatedDomains": [
+        "webcredentials:192.168.1.11"
+      ]
     },
     "android": {
       "package": "com.fido2demo.mobile",
+      "usesCleartextTraffic": true,
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView } from 'react-native'
 import { useRouter, Link } from 'expo-router'
 import { useAuthStore } from '@/lib/store'
-import { registerPasskey } from '@/lib/passkey'
+import { registerPasskey, getPasskeyErrorMessage } from '@/lib/passkey'
 
 export default function RegisterScreen() {
   const router = useRouter()
@@ -21,8 +21,7 @@ export default function RegisterScreen() {
       setAuth(data.token, data.username, data.displayName)
       router.replace('/(tabs)/dashboard')
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Registration failed'
-      Alert.alert('Error', msg)
+      Alert.alert('Error', getPasskeyErrorMessage(err, 'Registration failed'))
     } finally {
       setLoading(false)
     }

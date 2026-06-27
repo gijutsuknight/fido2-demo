@@ -7,4 +7,7 @@ export const config = {
     port: API_PORT,
     baseUrl: process.env.EXPO_PUBLIC_API_URL ?? `http://${API_HOST}:${API_PORT}`,
   },
+  webauthn: {
+    rpId: process.env.EXPO_PUBLIC_RP_ID ?? API_HOST,
+  },
 } as const

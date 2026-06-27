@@ -27,10 +27,12 @@ app:
     secret: ${JWT_SECRET:fido2-demo-secret-key-change-in-production-at-least-256-bits}
     expiration: ${JWT_EXPIRATION:86400000}
   webauthn:
-    rp-id: ${RP_ID:localhost}
+    rp-id: ${RP_ID:192.168.1.11}
     rp-name: ${RP_NAME:FIDO2 Demo}
-    rp-origins: ${RP_ORIGINS:http://localhost:5173,http://localhost:3000,http://localhost}
+    rp-origins: ${RP_ORIGINS:http://192.168.1.11:8080,http://192.168.1.11,http://localhost:5173,http://localhost:3000,http://localhost}
     challenge-timeout: ${CHALLENGE_TIMEOUT:300000}
+    android-package: ${ANDROID_PACKAGE:com.fido2demo.mobile}
+    android-cert-fingerprints: ${ANDROID_CERT_FINGERPRINTS:FA:C6:17:45:DC:09:03:78:6F:B9:ED:E6:2A:96:2B:39:9F:73:48:F0:BB:6F:89:9B:83:32:66:75:91:03:3B:9C}
 
 logging:
   level:

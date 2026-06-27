@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native'
 import { useRouter, Link } from 'expo-router'
 import { useAuthStore } from '@/lib/store'
-import { loginPasskey } from '@/lib/passkey'
+import { loginPasskey, getPasskeyErrorMessage } from '@/lib/passkey'
 
 export default function LoginScreen() {
   const router = useRouter()
@@ -17,8 +17,7 @@ export default function LoginScreen() {
       setAuth(data.token, data.username, data.displayName)
       router.replace('/(tabs)/dashboard')
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Authentication failed'
-      Alert.alert('Error', msg)
+      Alert.alert('Error', getPasskeyErrorMessage(err, 'Authentication failed'))
     } finally {
       setLoading(false)
     }
