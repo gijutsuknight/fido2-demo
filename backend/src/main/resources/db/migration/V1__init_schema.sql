@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS credentials (
     id            BIGINT AUTO_INCREMENT PRIMARY KEY,
     user_id       BIGINT NOT NULL,
-    credential_id VARCHAR(1024) NOT NULL UNIQUE,
+    credential_id VARCHAR(768) NOT NULL UNIQUE,
     public_key    TEXT NOT NULL,
     sign_count    BIGINT NOT NULL DEFAULT 0,
     aaguid        VARCHAR(36),

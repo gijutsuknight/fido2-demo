@@ -20,7 +20,7 @@ public class Credential {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(name = "credential_id", nullable = false, unique = true, length = 1024)
+    @Column(name = "credential_id", nullable = false, unique = true, length = 768)
     private String credentialId;
 
     @Column(name = "public_key", nullable = false, columnDefinition = "TEXT")
